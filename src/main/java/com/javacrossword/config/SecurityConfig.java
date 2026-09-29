@@ -10,6 +10,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 
@@ -65,6 +66,9 @@ public class SecurityConfig {
         return http.build();
     }
 
+    @Value("${FRONTEND_URL}")
+    private String frontendUrl;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
@@ -73,7 +77,8 @@ public class SecurityConfig {
        configuration.setAllowedOrigins(
             List.of(
                 "http://localhost:5173",
-                "http://192.168.1.4:5173"
+                "http://192.168.1.4:5173",
+                 frontendUrl
     )
 );
 
