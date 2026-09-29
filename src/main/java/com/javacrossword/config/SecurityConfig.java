@@ -78,6 +78,7 @@ public class SecurityConfig {
             List.of(
                 "http://localhost:5173",
                 "http://192.168.1.4:5173",
+                "https://facelift-zestfully-capsule.ngrok-free.dev",
                  frontendUrl
     )
 );
