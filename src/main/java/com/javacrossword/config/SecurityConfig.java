@@ -54,6 +54,9 @@ public class SecurityConfig {
                 .requestMatchers("/levels/**")
                 .authenticated()
 
+                .requestMatchers("/progress/**")
+                .authenticated()
+
                 .anyRequest()
                 .permitAll()
             )
@@ -77,8 +80,8 @@ public class SecurityConfig {
        configuration.setAllowedOrigins(
             List.of(
                 "http://localhost:5173",
-                "http://192.168.1.4:5173",
-                "https://facelift-zestfully-capsule.ngrok-free.dev",
+                "http://192.168.1.5:5173",
+                
                  frontendUrl
     )
 );

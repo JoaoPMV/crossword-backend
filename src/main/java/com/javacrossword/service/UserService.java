@@ -38,14 +38,14 @@ public class UserService {
         return userRepository.findAll();
     }
 
-   public User createUser(User user) {
-    if (userRepository.existsByEmail(user.getEmail())) {
-        throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
-    }
+    public User createUser(User user) {
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
 
-    user.setPassword(passwordEncoder.encode(user.getPassword()));
-    return userRepository.save(user);
-}
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return userRepository.save(user);
+    }
 
     public User getUserById(Long id) {
         return userRepository.findById(id).orElse(null);
@@ -75,45 +75,49 @@ public class UserService {
     }
 
     public String login(String email, String password) {
-    if (email == null || email.isBlank()) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
+        if (email == null || email.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
+        }
+
+        if (password == null || password.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
+        }
+
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        }
+
+        String stored = user.getPassword();
+        boolean isHashed = stored != null && stored.startsWith("$2");
+
+        boolean valid = isHashed
+                ? passwordEncoder.matches(password, stored)
+                : stored != null && stored.equals(password); // usuário antigo (texto puro)
+
+        if (!valid) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        }
+
+        // Migração: converte a senha antiga para hash no primeiro login
+        if (!isHashed) {
+            user.setPassword(passwordEncoder.encode(password));
+            userRepository.save(user);
+        }
+
+        return jwtService.generateToken(user.getEmail(), user.getId());
     }
-    if (password == null || password.isBlank()) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
-    }
-
-    User user = userRepository.findByEmail(email).orElse(null);
-
-    if (user == null) {
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
-    }
-
-    String stored = user.getPassword();
-    boolean isHashed = stored != null && stored.startsWith("$2");
-
-    boolean valid = isHashed
-            ? passwordEncoder.matches(password, stored)
-            : stored != null && stored.equals(password); // usuário antigo (texto puro)
-
-    if (!valid) {
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
-    }
-
-    // Migração: converte a senha antiga para hash no primeiro login
-    if (!isHashed) {
-        user.setPassword(passwordEncoder.encode(password));
-        userRepository.save(user);
-    }
-
-    return jwtService.generateToken(user.getEmail());
-}
 
     public String createPasswordResetToken(String email) {
 
         User user = userRepository.findByEmail(email).orElse(null);
 
         if (user == null) {
-            return null;
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "User not found"
+            );
         }
 
         PasswordResetToken resetToken =
@@ -133,15 +137,22 @@ public class UserService {
 
     public String resetPassword(String token, String password) {
 
+        if (password.length() < 8) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Password must be at least 8 characters"
+            );
+        }
+
         PasswordResetToken resetToken =
                 passwordResetTokenService.findByToken(token);
 
         if (resetToken == null) {
-            return "Token inválido.";
+            return "Invalid Token.";
         }
 
         if (resetToken.getExpiration().isBefore(LocalDateTime.now())) {
-            return "Token expirado.";
+            return "Expired Token.";
         }
 
         User user = resetToken.getUser();
@@ -150,6 +161,6 @@ public class UserService {
 
         userRepository.save(user);
 
-        return "Senha alterada com sucesso.";
+        return "Password changed successfully.";
     }
 }

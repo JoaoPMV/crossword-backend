@@ -15,10 +15,11 @@ public class JwtService {
             .getBytes()
     );
 
-    public String generateToken(String email) {
+    public String generateToken(String email, Long userId) {
 
         return Jwts.builder()
             .subject(email)
+            .claim("userId", userId)
             .issuedAt(new Date())
             .expiration(
                 new Date(System.currentTimeMillis() + 1000 * 60 * 60)
@@ -35,6 +36,16 @@ public class JwtService {
             .parseSignedClaims(token)
             .getPayload()
             .getSubject();
+    }
+
+    public Long extractUserId(String token) {
+
+        return Jwts.parser()
+            .verifyWith(key)
+            .build()
+            .parseSignedClaims(token)
+            .getPayload()
+            .get("userId", Long.class);
     }
 
     public Date extractExpiration(String token) {

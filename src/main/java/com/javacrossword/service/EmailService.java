@@ -5,11 +5,15 @@ import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class EmailService {
 
     private final JavaMailSender mailSender;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
@@ -28,8 +32,9 @@ public class EmailService {
         helper.setTo(email);
         helper.setSubject("Recuperação de senha");
 
+        
         String resetLink =
-                "http://localhost:5173/reset-password?token=" + token;
+        frontendUrl + "/reset-password?token=" + token;
 
         String html = """
                 <html>

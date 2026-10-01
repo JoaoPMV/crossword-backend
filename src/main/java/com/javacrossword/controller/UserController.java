@@ -6,8 +6,13 @@ import com.javacrossword.service.TokenRevocationService;
 import com.javacrossword.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
 import org.springframework.http.HttpStatus;
 
 
@@ -18,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
+@Validated
 @RequestMapping("/users")
 public class UserController {
 
@@ -98,15 +103,32 @@ public String login(@RequestBody User user) {
     }
 
     @PostMapping("/forgot-password")
-    public String forgotPassword(@RequestParam String email) {
-        return userService.createPasswordResetToken(email);
+    public String forgotPassword(
+        @RequestParam @Email @NotBlank String email
+    ) {
+    return userService.createPasswordResetToken(email);
     }
 
     @PostMapping("/reset-password")
-    public String resetPassword(@RequestBody Map<String, String> data) {
-        return userService.resetPassword(
-                data.get("token"),
-                data.get("password")
+    public String resetPassword(@RequestBody Map<String, String> data) { 
+
+    String token = data.get("token");
+    String password = data.get("password");
+
+    if (token == null || token.isBlank()) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Token is required"
         );
     }
+
+    if (password == null || password.isBlank()) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Password is required"
+        );
+    }
+
+    return userService.resetPassword(token, password);
+}
 }
